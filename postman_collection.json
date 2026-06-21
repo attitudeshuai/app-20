@@ -1,0 +1,913 @@
+{
+  "info": {
+    "name": "乐器练习室预约管理系统 API 测试集合",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "覆盖所有接口的功能测试集合，包括认证、练习室、预约、签到、反馈、统计等模块"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8090"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "userToken",
+      "value": ""
+    },
+    {
+      "key": "roomId",
+      "value": "1"
+    },
+    {
+      "key": "bookingId",
+      "value": "1"
+    },
+    {
+      "key": "checkInId",
+      "value": "1"
+    },
+    {
+      "key": "issueId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. 认证模块 (Auth)",
+      "item": [
+        {
+          "name": "1.1 用户注册 - 新用户",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser001\",\n  \"email\": \"test001@example.com\",\n  \"password\": \"password123\",\n  \"avatar\": \"https://api.dicebear.com/7.x/avataaars/svg?seed=test001\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"注册成功 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"注册成功 - 返回code 200\", function () { var json = pm.response.json(); pm.expect(json.code).to.eql(200); });",
+                  "pm.test(\"注册成功 - 包含token\", function () { var json = pm.response.json(); pm.expect(json.data.token).to.exist; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 用户注册 - 用户名重复(预期失败)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"zhangsan\",\n  \"email\": \"unique@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"用户名重复 - 返回code 400\", function () { var json = pm.response.json(); pm.expect(json.code).to.not.eql(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 管理员登录",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"管理员登录成功 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"管理员登录成功 - 返回code 200\", function () { var json = pm.response.json(); pm.expect(json.code).to.eql(200); });",
+                  "pm.test(\"管理员登录成功 - 保存token\", function () { var json = pm.response.json(); pm.collectionVariables.set(\"adminToken\", json.data.token); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 普通用户登录",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"zhangsan\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"普通用户登录成功 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"普通用户登录成功 - 保存token\", function () { var json = pm.response.json(); pm.collectionVariables.set(\"userToken\", json.data.token); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 错误密码登录(预期401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"zhangsan\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"错误密码 - 返回401\", function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.6 获取当前用户信息",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取当前用户 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"获取当前用户 - username正确\", function () { var json = pm.response.json(); pm.expect(json.data.username).to.eql(\"zhangsan\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.7 未登录获取当前用户(预期401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"未登录访问 - 返回401\", function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.8 更新个人信息",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"avatar\": \"https://api.dicebear.com/7.x/avataaars/svg?seed=zhangsan_new\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"更新个人信息 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. 练习室模块 (PracticeRooms)",
+      "item": [
+        {
+          "name": "2.1 获取练习室列表 - 普通用户",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/practicerooms?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "practicerooms"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取练习室列表 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"获取练习室列表 - 有数据\", function () { var json = pm.response.json(); pm.expect(json.data.content.length).to.be.above(0); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 搜索练习室 - 按名称",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/practicerooms?name=钢琴",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "practicerooms"],
+              "query": [
+                { "key": "name", "value": "钢琴" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"搜索练习室 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 获取练习室详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/practicerooms/1", "host": ["{{baseUrl}}"], "path": ["api", "practicerooms", "1"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取练习室详情 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"获取练习室详情 - id正确\", function () { var json = pm.response.json(); pm.expect(json.data.id).to.eql(1); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 创建练习室 - 管理员",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/practicerooms", "host": ["{{baseUrl}}"], "path": ["api", "practicerooms"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"电子琴练习室\",\n  \"location\": \"三楼302室\",\n  \"capacity\": 4,\n  \"equipment\": \"电子琴 x4, 耳机 x4, 乐谱架 x4\",\n  \"hourlyPrice\": 35.00,\n  \"openTime\": \"08:00:00\",\n  \"closeTime\": \"21:00:00\",\n  \"status\": \"OPEN\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"创建练习室 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"创建练习室 - 保存roomId\", function () { var json = pm.response.json(); pm.collectionVariables.set(\"roomId\", json.data.id); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 创建练习室 - 普通用户(预期403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/practicerooms", "host": ["{{baseUrl}}"], "path": ["api", "practicerooms"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试练习室\",\n  \"location\": \"测试位置\",\n  \"capacity\": 2,\n  \"hourlyPrice\": 10.00,\n  \"openTime\": \"08:00:00\",\n  \"closeTime\": \"20:00:00\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"普通用户创建练习室 - 返回403\", function () { pm.response.to.have.status(403); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.6 更新练习室 - 管理员",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/practicerooms/{{roomId}}", "host": ["{{baseUrl}}"], "path": ["api", "practicerooms", "{{roomId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hourlyPrice\": 40.00\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"更新练习室 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.7 修改练习室状态 - 管理员",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/practicerooms/{{roomId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "practicerooms", "{{roomId}}", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"MAINTENANCE\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"修改练习室状态 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. 预约模块 (Bookings)",
+      "item": [
+        {
+          "name": "3.1 创建预约",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/bookings", "host": ["{{baseUrl}}"], "path": ["api", "bookings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 2,\n  \"bookingDate\": \"{{$timestamp}}\",\n  \"startTime\": \"14:00:00\",\n  \"endTime\": \"16:00:00\",\n  \"purpose\": \"日常钢琴练习\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);",
+                  "var dateStr = tomorrow.toISOString().split('T')[0];",
+                  "pm.request.body.raw = pm.request.body.raw.replace('\"{{$timestamp}}\"', '\"' + dateStr + '\"');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"创建预约 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.json().code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"bookingId\", json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 获取预约列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取预约列表 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 获取我的预约",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/bookings/mine", "host": ["{{baseUrl}}"], "path": ["api", "bookings", "mine"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取我的预约 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 获取预约详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/bookings/1", "host": ["{{baseUrl}}"], "path": ["api", "bookings", "1"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取预约详情 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 修改预约状态",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/bookings/2/status", "host": ["{{baseUrl}}"], "path": ["api", "bookings", "2", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"修改预约状态 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. 签到模块 (CheckIns)",
+      "item": [
+        {
+          "name": "4.1 创建签到",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/checkins", "host": ["{{baseUrl}}"], "path": ["api", "checkins"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": 2,\n  \"note\": \"准时到达，准备开始练习\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"创建签到 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.json().code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"checkInId\", json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 获取签到列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/checkins", "host": ["{{baseUrl}}"], "path": ["api", "checkins"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取签到列表 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 获取签到详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/checkins/1", "host": ["{{baseUrl}}"], "path": ["api", "checkins", "1"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取签到详情 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 签出操作",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/checkins/1", "host": ["{{baseUrl}}"], "path": ["api", "checkins", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkOut\": true,\n  \"note\": \"练习结束，设备正常\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"签出操作 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. 反馈模块 (RoomIssues)",
+      "item": [
+        {
+          "name": "5.1 创建反馈",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/roomissues", "host": ["{{baseUrl}}"], "path": ["api", "roomissues"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"issueType\": \"设备问题\",\n  \"description\": \"钢琴踏板有些松动，需要修理\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"创建反馈 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.json().code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.collectionVariables.set(\"issueId\", json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 获取反馈列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/roomissues", "host": ["{{baseUrl}}"], "path": ["api", "roomissues"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取反馈列表 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 获取反馈详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/roomissues/1", "host": ["{{baseUrl}}"], "path": ["api", "roomissues", "1"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取反馈详情 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.4 管理员修改反馈状态",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/roomissues/1/status", "host": ["{{baseUrl}}"], "path": ["api", "roomissues", "1", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"修改反馈状态 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. 统计模块 (Stats)",
+      "item": [
+        {
+          "name": "6.1 获取总览统计 - 管理员",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/stats/overview", "host": ["{{baseUrl}}"], "path": ["api", "stats", "overview"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取总览统计 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"获取总览统计 - 包含统计数据\", function () { var json = pm.response.json(); pm.expect(json.data.totalUsers).to.exist; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 获取总览统计 - 普通用户(预期403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/stats/overview", "host": ["{{baseUrl}}"], "path": ["api", "stats", "overview"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"普通用户访问统计 - 返回403\", function () { pm.response.to.have.status(403); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 获取趋势统计 - 管理员",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/stats/trend", "host": ["{{baseUrl}}"], "path": ["api", "stats", "trend"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取趋势统计 - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. 系统检查",
+      "item": [
+        {
+          "name": "7.1 健康检查端点",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"健康检查 - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"健康检查 - status UP\", function () { var json = pm.response.json(); pm.expect(json.status).to.eql(\"UP\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.2 Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/swagger-ui/index.html", "host": ["{{baseUrl}}"], "path": ["swagger-ui", "index.html"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Swagger UI - 状态码200\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.3 API Docs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api-docs", "host": ["{{baseUrl}}"], "path": ["api-docs"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"API Docs - 状态码200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"API Docs - 包含OpenAPI版本\", function () { var json = pm.response.json(); pm.expect(json.openapi).to.exist; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
