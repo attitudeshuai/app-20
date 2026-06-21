@@ -59,4 +59,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b.room.name, COUNT(b) FROM Booking b " +
            "GROUP BY b.room.id ORDER BY COUNT(b) DESC")
     List<Object[]> getRoomRanking(Pageable pageable);
+
+    @Query("SELECT b FROM Booking b WHERE b.status IN :statuses " +
+           "AND (b.bookingDate < :date " +
+           "OR (b.bookingDate = :date AND b.startTime <= :time))")
+    List<Booking> findBookingsExpiredBefore(
+            @Param("statuses") List<BookingStatus> statuses,
+            @Param("date") LocalDate date,
+            @Param("time") LocalTime time);
+
+    @Query("SELECT b FROM Booking b WHERE b.status IN :statuses " +
+           "AND (b.bookingDate < :date " +
+           "OR (b.bookingDate = :date AND b.endTime <= :time))")
+    List<Booking> findCompletedBookingsBefore(
+            @Param("statuses") List<BookingStatus> statuses,
+            @Param("date") LocalDate date,
+            @Param("time") LocalTime time);
 }
