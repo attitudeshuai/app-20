@@ -7,8 +7,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.support.CronTrigger;
-
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -18,9 +16,12 @@ public class SchedulerConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SchedulerConfig.class);
 
-    private static final int POOL_SIZE = 5;
+    private static final int POOL_SIZE = 2;
     private static final String THREAD_NAME_PREFIX = "booking-scheduler-";
     private static final int AWAIT_TERMINATION_SECONDS = 30;
+
+    public static final String AUTO_CANCEL_CRON = "0 0 1 * * ?";
+    public static final String AUTO_COMPLETE_CRON = "0 30 1 * * ?";
 
     @Bean
     public TaskScheduler taskScheduler() {
@@ -42,15 +43,5 @@ public class SchedulerConfig {
         scheduler.initialize();
         logger.info("定时任务调度器初始化完成，线程池大小: {}", POOL_SIZE);
         return scheduler;
-    }
-
-    @Bean
-    public CronTrigger autoCancelCronTrigger() {
-        return new CronTrigger("0 */5 * * * ?");
-    }
-
-    @Bean
-    public CronTrigger autoCompleteCronTrigger() {
-        return new CronTrigger("0 */10 * * * ?");
     }
 }

@@ -1,5 +1,6 @@
 package com.instrumentroom.scheduler;
 
+import com.instrumentroom.config.SchedulerConfig;
 import com.instrumentroom.service.BookingStatusService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ public class BookingScheduledTask {
         this.bookingStatusService = bookingStatusService;
     }
 
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = SchedulerConfig.AUTO_CANCEL_CRON)
     public void executeAutoCancelTask() {
         String taskName = "自动取消超时预约";
         
@@ -51,7 +52,7 @@ public class BookingScheduledTask {
         }
     }
 
-    @Scheduled(cron = "0 */10 * * * ?")
+    @Scheduled(cron = SchedulerConfig.AUTO_COMPLETE_CRON)
     public void executeAutoCompleteTask() {
         String taskName = "自动完成已结束预约";
         
