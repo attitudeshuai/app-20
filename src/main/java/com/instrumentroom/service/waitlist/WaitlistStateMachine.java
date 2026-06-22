@@ -98,7 +98,7 @@ public class WaitlistStateMachine {
             waitlist.setConfirmedBookingId(confirmedBookingId);
         } else if (targetStatus == WaitlistStatus.FAILED && reason != null) {
             updatedRows = waitlistRepository.updateStatusAndFailReason(
-                    waitlist.getId(), targetStatus, reason);
+                    waitlist.getId(), targetStatus, reason, currentStatus, currentVersion);
             waitlist.setFailReason(reason);
         } else {
             updatedRows = waitlistRepository.updateStatusWithVersion(

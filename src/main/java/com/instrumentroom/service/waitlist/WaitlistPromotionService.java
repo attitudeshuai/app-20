@@ -179,15 +179,10 @@ public class WaitlistPromotionService {
     }
 
     private void markWaitlistFailed(Waitlist waitlist, String reason) {
-        if (waitlist.getStatus() == WaitlistStatus.PROCESSING || waitlist.getStatus() == WaitlistStatus.WAITING) {
-            if (waitlist.getStatus() == WaitlistStatus.WAITING) {
-                stateMachine.tryTransition(waitlist, WaitlistStatus.PROCESSING);
-            }
-            stateMachine.tryTransition(waitlist, WaitlistStatus.FAILED, reason);
-        } else {
-            waitlistRepository.updateStatusAndFailReason(
-                    waitlist.getId(), WaitlistStatus.FAILED, reason);
+        if (waitlist.getStatus() == WaitlistStatus.WAITING) {
+            stateMachine.tryTransition(waitlist, WaitlistStatus.PROCESSING);
         }
+        stateMachine.tryTransition(waitlist, WaitlistStatus.FAILED, reason);
     }
 
     @Transactional

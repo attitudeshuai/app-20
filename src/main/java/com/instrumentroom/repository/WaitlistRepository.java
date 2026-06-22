@@ -112,8 +112,13 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, Long> {
             @Param("version") Integer version);
 
     @Modifying
-    @Query("UPDATE Waitlist w SET w.status = :newStatus, w.failReason = :failReason, w.version = w.version + 1 WHERE w.id = :id")
-    int updateStatusAndFailReason(@Param("id") Long id, @Param("newStatus") WaitlistStatus newStatus, @Param("failReason") String failReason);
+    @Query("UPDATE Waitlist w SET w.status = :newStatus, w.failReason = :failReason, w.version = w.version + 1 WHERE w.id = :id AND w.status = :expectedStatus AND w.version = :version")
+    int updateStatusAndFailReason(
+            @Param("id") Long id,
+            @Param("newStatus") WaitlistStatus newStatus,
+            @Param("failReason") String failReason,
+            @Param("expectedStatus") WaitlistStatus expectedStatus,
+            @Param("version") Integer version);
 
     @Query("SELECT w FROM Waitlist w WHERE w.status = :status AND w.bookingDate <= :date ORDER BY w.createdAt ASC")
     List<Waitlist> findByStatusAndBookingDateBefore(
