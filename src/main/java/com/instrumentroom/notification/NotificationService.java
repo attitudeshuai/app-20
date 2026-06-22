@@ -6,10 +6,12 @@ import com.instrumentroom.entity.User;
 import com.instrumentroom.notification.dto.NotificationRequest;
 import com.instrumentroom.notification.dto.NotificationResult;
 import com.instrumentroom.notification.sender.NotificationSender;
+import com.instrumentroom.notification.service.NotificationLogService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -20,13 +22,18 @@ public class NotificationService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    private final Map<NotificationChannel, NotificationSender> senderMap = new EnumMap<>(NotificationChannel.class);
+    private static final long DEFAULT_DEDUP_HOURS = 24;
 
-    public NotificationService(List<NotificationSender> senders) {
+    private final Map<NotificationChannel, NotificationSender> senderMap = new EnumMap<>(NotificationChannel.class);
+    private final NotificationLogService notificationLogService;
+
+    public NotificationService(List<NotificationSender> senders,
+                               NotificationLogService notificationLogService) {
         for (NotificationSender sender : senders) {
             senderMap.put(sender.getChannel(), sender);
             logger.info("已注册通知发送器: {}", sender.getChannel());
         }
+        this.notificationLogService = notificationLogService;
     }
 
     public List<NotificationResult> send(NotificationRequest request) {
@@ -39,6 +46,9 @@ public class NotificationService {
                     NotificationChannel.SITE_MESSAGE
             };
         }
+
+        Long relatedId = notificationLogService.extractRelatedId(request.getVariables());
+        Long userId = request.getUserId();
 
         for (NotificationChannel channel : channels) {
             NotificationSender sender = senderMap.get(channel);
@@ -62,20 +72,47 @@ public class NotificationService {
                 continue;
             }
 
+            if (isDuplicate(userId, relatedId, request.getType(), channel)) {
+                logger.debug("通知已发送过，跳过重复发送，用户ID: {}, 类型: {}, 渠道: {}, 关联ID: {}",
+                        userId, request.getType(), channel, relatedId);
+                results.add(NotificationResult.builder()
+                        .channel(channel)
+                        .success(true)
+                        .message("已发送过，跳过重复")
+                        .build());
+                continue;
+            }
+
             try {
                 NotificationResult result = sender.send(request);
                 results.add(result);
+                notificationLogService.logResult(userId, relatedId, request.getType(), channel, result);
             } catch (Exception e) {
                 logger.error("发送通知异常，渠道: {}", channel, e);
-                results.add(NotificationResult.builder()
+                NotificationResult errorResult = NotificationResult.builder()
                         .channel(channel)
                         .success(false)
                         .message("发送异常: " + e.getMessage())
-                        .build());
+                        .build();
+                results.add(errorResult);
+                notificationLogService.logResult(userId, relatedId, request.getType(), channel, errorResult);
             }
         }
 
         return results;
+    }
+
+    private boolean isDuplicate(Long userId, Long relatedId,
+                                NotificationType type, NotificationChannel channel) {
+        if (userId == null || relatedId == null) {
+            return false;
+        }
+        if (type == NotificationType.BOOKING_REMINDER
+                || type == NotificationType.CHECK_IN_OVERDUE) {
+            LocalDateTime since = LocalDateTime.now().minusHours(DEFAULT_DEDUP_HOURS);
+            return notificationLogService.hasSentWithin(userId, relatedId, type, channel, since);
+        }
+        return notificationLogService.hasSentSuccessfully(userId, relatedId, type, channel);
     }
 
     public void notifyBookingCreated(Booking booking) {

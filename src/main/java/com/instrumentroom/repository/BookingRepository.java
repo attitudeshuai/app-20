@@ -76,21 +76,45 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("date") LocalDate date,
             @Param("time") LocalTime time);
 
-    @Query("SELECT b FROM Booking b WHERE b.status IN :statuses " +
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.room " +
+           "WHERE b.status IN :statuses " +
            "AND b.bookingDate = :date " +
            "AND b.startTime BETWEEN :startTime AND :endTime")
-    List<Booking> findBookingsStartingBetween(
+    List<Booking> findBookingsStartingBetweenWithDetails(
             @Param("statuses") List<BookingStatus> statuses,
             @Param("date") LocalDate date,
             @Param("startTime") LocalTime startTime,
             @Param("endTime") LocalTime endTime);
 
-    @Query("SELECT b FROM Booking b WHERE b.status IN :statuses " +
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.room " +
+           "WHERE b.status IN :statuses " +
+           "AND ((b.bookingDate = :startDate AND b.startTime >= :startTime) " +
+           "OR (b.bookingDate = :endDate AND b.startTime <= :endTime) " +
+           "OR (b.bookingDate > :startDate AND b.bookingDate < :endDate))")
+    List<Booking> findBookingsStartingInRangeWithDetails(
+            @Param("statuses") List<BookingStatus> statuses,
+            @Param("startDate") LocalDate startDate,
+            @Param("startTime") LocalTime startTime,
+            @Param("endDate") LocalDate endDate,
+            @Param("endTime") LocalTime endTime);
+
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.room " +
+           "WHERE b.status IN :statuses " +
            "AND b.bookingDate = :date " +
            "AND b.startTime <= :overdueTime " +
            "AND b.id NOT IN (SELECT c.booking.id FROM CheckIn c WHERE c.checkInAt IS NOT NULL)")
-    List<Booking> findOverdueCheckIns(
+    List<Booking> findOverdueCheckInsWithDetails(
             @Param("statuses") List<BookingStatus> statuses,
             @Param("date") LocalDate date,
             @Param("overdueTime") LocalTime overdueTime);
+
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.room " +
+           "WHERE b.status IN :statuses " +
+           "AND ((b.bookingDate = :startDate AND b.startTime <= :startTime) " +
+           "OR b.bookingDate < :startDate) " +
+           "AND b.id NOT IN (SELECT c.booking.id FROM CheckIn c WHERE c.checkInAt IS NOT NULL)")
+    List<Booking> findOverdueCheckInsBeforeWithDetails(
+            @Param("statuses") List<BookingStatus> statuses,
+            @Param("startDate") LocalDate startDate,
+            @Param("startTime") LocalTime startTime);
 }

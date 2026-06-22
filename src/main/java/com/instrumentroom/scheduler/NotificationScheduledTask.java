@@ -97,22 +97,17 @@ public class NotificationScheduledTask {
 
     private int sendBookingReminders() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime reminderWindowStart = now.plusMinutes(REMINDER_MINUTES_BEFORE - 30);
-        LocalDateTime reminderWindowEnd = now.plusMinutes(REMINDER_MINUTES_BEFORE + 30);
+        LocalDateTime windowStart = now.plusMinutes(REMINDER_MINUTES_BEFORE - 30);
+        LocalDateTime windowEnd = now.plusMinutes(REMINDER_MINUTES_BEFORE + 30);
 
-        LocalDate today = LocalDate.now();
-        LocalTime startTime = reminderWindowStart.toLocalTime();
-        LocalTime endTime = reminderWindowEnd.toLocalTime();
-
-        logger.debug("查询即将开始的预约，时间范围: {} - {}", startTime, endTime);
+        logger.debug("查询即将开始的预约，时间范围: {} - {}", windowStart, windowEnd);
 
         List<BookingStatus> targetStatuses = Arrays.asList(
                 BookingStatus.PENDING,
                 BookingStatus.CONFIRMED
         );
 
-        List<Booking> upcomingBookings = bookingRepository.findBookingsStartingBetween(
-                targetStatuses, today, startTime, endTime);
+        List<Booking> upcomingBookings = findBookingsInWindow(targetStatuses, windowStart, windowEnd);
 
         if (upcomingBookings.isEmpty()) {
             logger.info("没有找到即将开始的预约");
@@ -134,22 +129,35 @@ public class NotificationScheduledTask {
         return count;
     }
 
+    private List<Booking> findBookingsInWindow(List<BookingStatus> statuses,
+                                                LocalDateTime windowStart,
+                                                LocalDateTime windowEnd) {
+        LocalDate startDate = windowStart.toLocalDate();
+        LocalTime startTime = windowStart.toLocalTime();
+        LocalDate endDate = windowEnd.toLocalDate();
+        LocalTime endTime = windowEnd.toLocalTime();
+
+        if (startDate.equals(endDate)) {
+            return bookingRepository.findBookingsStartingBetweenWithDetails(
+                    statuses, startDate, startTime, endTime);
+        } else {
+            return bookingRepository.findBookingsStartingInRangeWithDetails(
+                    statuses, startDate, startTime, endDate, endTime);
+        }
+    }
+
     private int sendOverdueNotifications() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime overdueDeadline = now.minusMinutes(OVERDUE_MINUTES);
 
-        LocalDate today = LocalDate.now();
-        LocalTime overdueTime = overdueDeadline.toLocalTime();
-
-        logger.debug("查询逾期未签到的预约，截止时间: {}", overdueTime);
+        logger.debug("查询逾期未签到的预约，截止时间: {}", overdueDeadline);
 
         List<BookingStatus> targetStatuses = Arrays.asList(
                 BookingStatus.PENDING,
                 BookingStatus.CONFIRMED
         );
 
-        List<Booking> overdueBookings = bookingRepository.findOverdueCheckIns(
-                targetStatuses, today, overdueTime);
+        List<Booking> overdueBookings = findOverdueBookings(targetStatuses, overdueDeadline);
 
         if (overdueBookings.isEmpty()) {
             logger.info("没有找到逾期未签到的预约");
@@ -169,5 +177,19 @@ public class NotificationScheduledTask {
         }
 
         return count;
+    }
+
+    private List<Booking> findOverdueBookings(List<BookingStatus> statuses,
+                                               LocalDateTime deadline) {
+        LocalDate deadlineDate = deadline.toLocalDate();
+        LocalTime deadlineTime = deadline.toLocalTime();
+
+        if (deadline.toLocalDate().equals(LocalDate.now())) {
+            return bookingRepository.findOverdueCheckInsWithDetails(
+                    statuses, deadlineDate, deadlineTime);
+        } else {
+            return bookingRepository.findOverdueCheckInsBeforeWithDetails(
+                    statuses, deadlineDate, deadlineTime);
+        }
     }
 }
