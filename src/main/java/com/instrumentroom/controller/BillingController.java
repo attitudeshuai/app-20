@@ -74,7 +74,7 @@ public class BillingController {
     }
 
     @PatchMapping("/{id}/payment-status")
-    @Operation(summary = "更新支付状态", description = "更新账单的支付状态（仅账单所属用户或管理员）")
+    @Operation(summary = "更新支付状态", description = "更新账单的支付状态（仅管理员可操作，支付网关回调通过单独接口处理）")
     public ResponseEntity<ApiResponse<BillResponse>> updatePaymentStatus(
             @PathVariable Long id,
             @Valid @RequestBody UpdatePaymentStatusRequest request) {

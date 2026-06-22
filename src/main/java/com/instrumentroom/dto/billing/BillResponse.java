@@ -38,6 +38,7 @@ public class BillResponse {
     private LocalDateTime refundTime;
     private String refundReason;
     private String remark;
+    private String paymentUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

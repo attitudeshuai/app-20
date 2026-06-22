@@ -136,8 +136,11 @@ public class BillingService {
 
     @Transactional
     public BillResponse updatePaymentStatus(Long id, UpdatePaymentStatusRequest request) {
+        if (!authService.isAdmin()) {
+            throw new BusinessException(403, "仅管理员可修改支付状态");
+        }
+
         Bill bill = getBillEntityById(id);
-        checkModifyPermission(bill);
 
         PaymentStatus newStatus = request.getPaymentStatus();
         validatePaymentStatusTransition(bill.getPaymentStatus(), newStatus);
@@ -196,7 +199,9 @@ public class BillingService {
             bill = billRepository.save(bill);
         }
 
-        return BillResponse.fromEntity(bill, true);
+        BillResponse response = BillResponse.fromEntity(bill, true);
+        response.setPaymentUrl(paymentResponse.getPaymentUrl());
+        return response;
     }
 
     @Transactional
