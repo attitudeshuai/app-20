@@ -19,7 +19,9 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
            "nl.relatedId = :relatedId AND " +
            "nl.messageType = :messageType AND " +
            "nl.channel = :channel AND " +
-           "nl.isSuccess = true")
+           "nl.isSuccess = true " +
+           "ORDER BY nl.createdAt DESC " +
+           "LIMIT 1")
     Optional<NotificationLog> findSuccessfulNotification(
             @Param("userId") Long userId,
             @Param("relatedId") Long relatedId,
@@ -39,4 +41,16 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             @Param("messageType") NotificationType messageType,
             @Param("channel") NotificationChannel channel,
             @Param("since") LocalDateTime since);
+
+    @Query("SELECT MAX(nl.createdAt) FROM NotificationLog nl WHERE " +
+           "nl.userId = :userId AND " +
+           "nl.relatedId = :relatedId AND " +
+           "nl.messageType = :messageType AND " +
+           "nl.channel = :channel AND " +
+           "nl.isSuccess = true")
+    Optional<LocalDateTime> findLastSentAt(
+            @Param("userId") Long userId,
+            @Param("relatedId") Long relatedId,
+            @Param("messageType") NotificationType messageType,
+            @Param("channel") NotificationChannel channel);
 }

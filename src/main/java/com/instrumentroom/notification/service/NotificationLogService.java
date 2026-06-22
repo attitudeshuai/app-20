@@ -12,11 +12,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class NotificationLogService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationLogService.class);
+
+    private static final Set<NotificationType> ONE_TIME_TYPES = Set.of(
+            NotificationType.BOOKING_CREATED,
+            NotificationType.BOOKING_CANCELLED,
+            NotificationType.BOOKING_CONFIRMED,
+            NotificationType.BOOKING_COMPLETED
+    );
 
     private final NotificationLogRepository notificationLogRepository;
 
@@ -39,12 +48,31 @@ public class NotificationLogService {
         if (userId == null || relatedId == null || since == null) {
             return false;
         }
-        return notificationLogRepository.hasSuccessfulNotificationSince(
-                userId, relatedId, type, channel, since);
+        Optional<LocalDateTime> lastSent = notificationLogRepository.findLastSentAt(
+                userId, relatedId, type, channel);
+        return lastSent.isPresent() && !lastSent.get().isBefore(since);
     }
 
     @Transactional
     public void logResult(Long userId, Long relatedId,
+                         NotificationType type, NotificationChannel channel,
+                         NotificationResult result) {
+        if (!result.isSuccess()) {
+            saveLog(userId, relatedId, type, channel, result);
+            return;
+        }
+
+        if (ONE_TIME_TYPES.contains(type) && userId != null && relatedId != null) {
+            if (notificationLogRepository.findSuccessfulNotification(userId, relatedId, type, channel).isPresent()) {
+                logger.debug("一次性通知已存在成功记录，跳过写入，用户ID: {}, 类型: {}, 渠道: {}", userId, type, channel);
+                return;
+            }
+        }
+
+        saveLog(userId, relatedId, type, channel, result);
+    }
+
+    private void saveLog(Long userId, Long relatedId,
                          NotificationType type, NotificationChannel channel,
                          NotificationResult result) {
         try {

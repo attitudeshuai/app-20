@@ -9,8 +9,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notification_logs", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "related_id", "message_type", "channel"})
+@Table(name = "notification_logs", indexes = {
+        @Index(columnList = "user_id, related_id, message_type, channel"),
+        @Index(columnList = "user_id, related_id, message_type, channel, createdAt")
 })
 @Getter
 @Setter
