@@ -1,0 +1,10 @@
+package com.instrumentroom.notification;
+
+public enum NotificationType {
+    BOOKING_CREATED,
+    BOOKING_CANCELLED,
+    BOOKING_REMINDER,
+    CHECK_IN_OVERDUE,
+    BOOKING_CONFIRMED,
+    BOOKING_COMPLETED
+}

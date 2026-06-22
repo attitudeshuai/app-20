@@ -3,6 +3,7 @@ package com.instrumentroom.service;
 import com.instrumentroom.entity.Booking;
 import com.instrumentroom.entity.BookingStatus;
 import com.instrumentroom.entity.CheckIn;
+import com.instrumentroom.notification.NotificationService;
 import com.instrumentroom.repository.BookingRepository;
 import com.instrumentroom.repository.CheckInRepository;
 import org.slf4j.Logger;
@@ -27,12 +28,15 @@ public class BookingStatusService {
 
     private final BookingRepository bookingRepository;
     private final CheckInRepository checkInRepository;
+    private final NotificationService notificationService;
 
     public BookingStatusService(
             BookingRepository bookingRepository,
-            CheckInRepository checkInRepository) {
+            CheckInRepository checkInRepository,
+            NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
         this.checkInRepository = checkInRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -99,6 +103,8 @@ public class BookingStatusService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
+
+        notificationService.notifyBookingCancelled(booking, "超时未办理入住，系统自动取消");
 
         logger.info("预约 {} 已自动取消，原因: 超时未办理入住", booking.getId());
         return true;
@@ -183,6 +189,8 @@ public class BookingStatusService {
 
         booking.setStatus(BookingStatus.COMPLETED);
         bookingRepository.save(booking);
+
+        notificationService.notifyBookingCompleted(booking);
 
         logger.info("预约 {} 已自动完成，签出时间: {}", booking.getId(), checkIn.getCheckOutAt());
         return true;

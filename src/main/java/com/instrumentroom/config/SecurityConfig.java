@@ -56,6 +56,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/**").authenticated()
                         .requestMatchers("/api/checkins/**").authenticated()
                         .requestMatchers("/api/issues/**").authenticated()
+                        .requestMatchers("/api/messages/**").authenticated()
+                        .requestMatchers("/api/billing/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

@@ -22,6 +22,12 @@ jwt:
   secret: instrumentroom-test-secret-key-must-be-at-least-256-bits-long-for-security
   expiration: 86400000
 
+notification:
+  email:
+    enabled: false
+  sms:
+    enabled: false
+
 logging:
   level:
     root: WARN

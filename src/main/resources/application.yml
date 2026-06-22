@@ -24,6 +24,20 @@ spring:
     time-zone: Asia/Shanghai
     serialization:
       write-dates-as-timestamps: false
+  mail:
+    host: ${MAIL_HOST:smtp.example.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:noreply@instrumentroom.com}
+    password: ${MAIL_PASSWORD:password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 3000
+          writetimeout: 5000
 
 jwt:
   secret: ${JWT_SECRET:instrumentroom-default-secret-key-must-be-at-least-256-bits-long-for-security}
@@ -43,6 +57,12 @@ management:
   endpoint:
     health:
       show-details: always
+
+notification:
+  email:
+    enabled: ${NOTIFICATION_EMAIL_ENABLED:false}
+  sms:
+    enabled: ${NOTIFICATION_SMS_ENABLED:false}
 
 logging:
   level:

@@ -5,6 +5,7 @@ import com.instrumentroom.dto.common.PageResponse;
 import com.instrumentroom.entity.*;
 import com.instrumentroom.exception.BusinessException;
 import com.instrumentroom.exception.ResourceNotFoundException;
+import com.instrumentroom.notification.NotificationService;
 import com.instrumentroom.repository.BookingRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,14 +27,17 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final PracticeRoomService roomService;
     private final AuthService authService;
+    private final NotificationService notificationService;
 
     public BookingService(
             BookingRepository bookingRepository,
             PracticeRoomService roomService,
-            AuthService authService) {
+            AuthService authService,
+            NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
         this.roomService = roomService;
         this.authService = authService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -82,6 +86,9 @@ public class BookingService {
                 .build();
 
         booking = bookingRepository.save(booking);
+
+        notificationService.notifyBookingCreated(booking);
+
         return BookingResponse.fromEntity(booking, true);
     }
 
@@ -216,8 +223,14 @@ public class BookingService {
         checkModifyPermission(booking);
         checkStatusChangePermission(request.getStatus());
 
-        booking.setStatus(request.getStatus());
+        BookingStatus oldStatus = booking.getStatus();
+        BookingStatus newStatus = request.getStatus();
+
+        booking.setStatus(newStatus);
         booking = bookingRepository.save(booking);
+
+        handleStatusChangeNotification(booking, oldStatus, newStatus);
+
         return BookingResponse.fromEntity(booking, true);
     }
 
@@ -228,7 +241,30 @@ public class BookingService {
     public void deleteBooking(Long id) {
         Booking booking = getBookingEntityById(id);
         checkModifyPermission(booking);
+
+        notificationService.notifyBookingCancelled(booking, "用户删除");
+
         bookingRepository.delete(booking);
+    }
+
+    private void handleStatusChangeNotification(Booking booking, BookingStatus oldStatus, BookingStatus newStatus) {
+        if (oldStatus == newStatus) {
+            return;
+        }
+
+        switch (newStatus) {
+            case CANCELLED:
+                notificationService.notifyBookingCancelled(booking, "状态变更");
+                break;
+            case CONFIRMED:
+                notificationService.notifyBookingConfirmed(booking);
+                break;
+            case COMPLETED:
+                notificationService.notifyBookingCompleted(booking);
+                break;
+            default:
+                break;
+        }
     }
 
     /**

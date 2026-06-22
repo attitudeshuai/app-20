@@ -10,6 +10,7 @@ import com.instrumentroom.entity.CheckIn;
 import com.instrumentroom.entity.User;
 import com.instrumentroom.exception.BusinessException;
 import com.instrumentroom.exception.ResourceNotFoundException;
+import com.instrumentroom.notification.NotificationService;
 import com.instrumentroom.repository.CheckInRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,14 +30,17 @@ public class CheckInService {
     private final CheckInRepository checkInRepository;
     private final BookingService bookingService;
     private final AuthService authService;
+    private final NotificationService notificationService;
 
     public CheckInService(
             CheckInRepository checkInRepository,
             BookingService bookingService,
-            AuthService authService) {
+            AuthService authService,
+            NotificationService notificationService) {
         this.checkInRepository = checkInRepository;
         this.bookingService = bookingService;
         this.authService = authService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -135,6 +139,7 @@ public class CheckInService {
             Booking booking = checkIn.getBooking();
             if (booking.getStatus() != BookingStatus.CANCELLED) {
                 booking.setStatus(BookingStatus.COMPLETED);
+                notificationService.notifyBookingCompleted(booking);
             }
         }
 

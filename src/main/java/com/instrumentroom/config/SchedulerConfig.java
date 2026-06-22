@@ -16,12 +16,14 @@ public class SchedulerConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SchedulerConfig.class);
 
-    private static final int POOL_SIZE = 2;
+    private static final int POOL_SIZE = 4;
     private static final String THREAD_NAME_PREFIX = "booking-scheduler-";
     private static final int AWAIT_TERMINATION_SECONDS = 30;
 
     public static final String AUTO_CANCEL_CRON = "0 0 1 * * ?";
     public static final String AUTO_COMPLETE_CRON = "0 30 1 * * ?";
+    public static final String BOOKING_REMINDER_CRON = "0 0 * * * ?";
+    public static final String CHECK_IN_OVERDUE_CRON = "0 30 * * * ?";
 
     @Bean
     public TaskScheduler taskScheduler() {

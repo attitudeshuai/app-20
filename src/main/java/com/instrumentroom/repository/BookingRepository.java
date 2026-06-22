@@ -75,4 +75,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("statuses") List<BookingStatus> statuses,
             @Param("date") LocalDate date,
             @Param("time") LocalTime time);
+
+    @Query("SELECT b FROM Booking b WHERE b.status IN :statuses " +
+           "AND b.bookingDate = :date " +
+           "AND b.startTime BETWEEN :startTime AND :endTime")
+    List<Booking> findBookingsStartingBetween(
+            @Param("statuses") List<BookingStatus> statuses,
+            @Param("date") LocalDate date,
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime);
+
+    @Query("SELECT b FROM Booking b WHERE b.status IN :statuses " +
+           "AND b.bookingDate = :date " +
+           "AND b.startTime <= :overdueTime " +
+           "AND b.id NOT IN (SELECT c.booking.id FROM CheckIn c WHERE c.checkInAt IS NOT NULL)")
+    List<Booking> findOverdueCheckIns(
+            @Param("statuses") List<BookingStatus> statuses,
+            @Param("date") LocalDate date,
+            @Param("overdueTime") LocalTime overdueTime);
 }
