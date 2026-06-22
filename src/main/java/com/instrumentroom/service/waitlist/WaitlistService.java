@@ -84,6 +84,7 @@ public class WaitlistService {
                 request.getStartTime(), request.getEndTime(),
                 priority, waitlist.getCreatedAt());
         waitlist.setQueuePosition(queuePosition);
+        waitlist = waitlistRepository.save(waitlist);
 
         notificationService.notifyWaitlistCreated(waitlist);
 
@@ -161,13 +162,13 @@ public class WaitlistService {
 
         int oldPriority = waitlist.getPriority();
         waitlist.setPriority(request.getPriority());
-        waitlist = waitlistRepository.save(waitlist);
 
         int queuePosition = ruleService.calculateQueuePosition(
                 waitlist.getRoom().getId(), waitlist.getBookingDate(),
                 waitlist.getStartTime(), waitlist.getEndTime(),
                 request.getPriority(), waitlist.getCreatedAt());
         waitlist.setQueuePosition(queuePosition);
+        waitlist = waitlistRepository.save(waitlist);
 
         logger.info("候补优先级更新: id={}, oldPriority={}, newPriority={}, position={}",
                 id, oldPriority, request.getPriority(), queuePosition);

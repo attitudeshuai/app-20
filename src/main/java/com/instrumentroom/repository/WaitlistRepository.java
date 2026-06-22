@@ -95,7 +95,7 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, Long> {
     List<Waitlist> findExpiredWaitlists(@Param("statuses") List<WaitlistStatus> statuses, @Param("now") LocalDateTime now);
 
     @Modifying
-    @Query("UPDATE Waitlist w SET w.status = :newStatus WHERE w.id = :id AND w.status = :expectedStatus AND w.version = :version")
+    @Query("UPDATE Waitlist w SET w.status = :newStatus, w.version = w.version + 1 WHERE w.id = :id AND w.status = :expectedStatus AND w.version = :version")
     int updateStatusWithVersion(
             @Param("id") Long id,
             @Param("newStatus") WaitlistStatus newStatus,
@@ -103,7 +103,16 @@ public interface WaitlistRepository extends JpaRepository<Waitlist, Long> {
             @Param("version") Integer version);
 
     @Modifying
-    @Query("UPDATE Waitlist w SET w.status = :newStatus, w.failReason = :failReason WHERE w.id = :id")
+    @Query("UPDATE Waitlist w SET w.status = :newStatus, w.confirmedBookingId = :confirmedBookingId, w.version = w.version + 1 WHERE w.id = :id AND w.status = :expectedStatus AND w.version = :version")
+    int confirmStatusWithBookingId(
+            @Param("id") Long id,
+            @Param("newStatus") WaitlistStatus newStatus,
+            @Param("confirmedBookingId") Long confirmedBookingId,
+            @Param("expectedStatus") WaitlistStatus expectedStatus,
+            @Param("version") Integer version);
+
+    @Modifying
+    @Query("UPDATE Waitlist w SET w.status = :newStatus, w.failReason = :failReason, w.version = w.version + 1 WHERE w.id = :id")
     int updateStatusAndFailReason(@Param("id") Long id, @Param("newStatus") WaitlistStatus newStatus, @Param("failReason") String failReason);
 
     @Query("SELECT w FROM Waitlist w WHERE w.status = :status AND w.bookingDate <= :date ORDER BY w.createdAt ASC")
