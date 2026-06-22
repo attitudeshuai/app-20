@@ -24,6 +24,8 @@ public class SchedulerConfig {
     public static final String AUTO_COMPLETE_CRON = "0 30 1 * * ?";
     public static final String BOOKING_REMINDER_CRON = "0 0 * * * ?";
     public static final String CHECK_IN_OVERDUE_CRON = "0 30 * * * ?";
+    public static final String WAITLIST_EXPIRE_CRON = "0 0 * * * ?";
+    public static final String WAITLIST_PROMOTION_CRON = "0 */5 * * * ?";
 
     @Bean
     public TaskScheduler taskScheduler() {

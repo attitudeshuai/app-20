@@ -64,6 +64,13 @@ notification:
   sms:
     enabled: ${NOTIFICATION_SMS_ENABLED:false}
 
+waitlist:
+  default-priority: ${WAITLIST_DEFAULT_PRIORITY:10}
+  max-priority: ${WAITLIST_MAX_PRIORITY:100}
+  min-priority: ${WAITLIST_MIN_PRIORITY:0}
+  max-per-user-per-room: ${WAITLIST_MAX_PER_USER_PER_ROOM:3}
+  expire-hours: ${WAITLIST_EXPIRE_HOURS:24}
+
 logging:
   level:
     root: INFO

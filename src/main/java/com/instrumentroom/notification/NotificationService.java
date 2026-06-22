@@ -3,6 +3,7 @@ package com.instrumentroom.notification;
 import com.instrumentroom.entity.Booking;
 import com.instrumentroom.entity.PracticeRoom;
 import com.instrumentroom.entity.User;
+import com.instrumentroom.entity.Waitlist;
 import com.instrumentroom.notification.dto.NotificationRequest;
 import com.instrumentroom.notification.dto.NotificationResult;
 import com.instrumentroom.notification.sender.NotificationSender;
@@ -216,6 +217,92 @@ public class NotificationService {
 
         send(request);
         logger.info("预约完成通知已触发，预约ID: {}, 用户ID: {}", booking.getId(), user.getId());
+    }
+
+    public void notifyWaitlistCreated(Waitlist waitlist) {
+        User user = waitlist.getUser();
+        PracticeRoom room = waitlist.getRoom();
+
+        Map<String, Object> variables = buildWaitlistVariables(waitlist, user, room);
+
+        NotificationRequest request = NotificationRequest.builder()
+                .type(NotificationType.WAITLIST_CREATED)
+                .userId(user.getId())
+                .email(user.getEmail())
+                .variables(variables)
+                .build();
+
+        send(request);
+        logger.info("候补创建通知已触发，候补ID: {}, 用户ID: {}", waitlist.getId(), user.getId());
+    }
+
+    public void notifyWaitlistPromoted(Waitlist waitlist, Booking booking) {
+        User user = waitlist.getUser();
+        PracticeRoom room = waitlist.getRoom();
+
+        Map<String, Object> variables = buildWaitlistVariables(waitlist, user, room);
+        variables.put("bookingId", booking.getId());
+
+        NotificationRequest request = NotificationRequest.builder()
+                .type(NotificationType.WAITLIST_PROMOTED)
+                .userId(user.getId())
+                .email(user.getEmail())
+                .variables(variables)
+                .build();
+
+        send(request);
+        logger.info("候补转正通知已触发，候补ID: {}, 预约ID: {}, 用户ID: {}",
+                waitlist.getId(), booking.getId(), user.getId());
+    }
+
+    public void notifyWaitlistCancelled(Waitlist waitlist, String reason) {
+        User user = waitlist.getUser();
+        PracticeRoom room = waitlist.getRoom();
+
+        Map<String, Object> variables = buildWaitlistVariables(waitlist, user, room);
+        variables.put("cancelReason", reason != null ? reason : "用户取消");
+
+        NotificationRequest request = NotificationRequest.builder()
+                .type(NotificationType.WAITLIST_CANCELLED)
+                .userId(user.getId())
+                .email(user.getEmail())
+                .variables(variables)
+                .build();
+
+        send(request);
+        logger.info("候补取消通知已触发，候补ID: {}, 用户ID: {}", waitlist.getId(), user.getId());
+    }
+
+    public void notifyWaitlistExpired(Waitlist waitlist) {
+        User user = waitlist.getUser();
+        PracticeRoom room = waitlist.getRoom();
+
+        Map<String, Object> variables = buildWaitlistVariables(waitlist, user, room);
+
+        NotificationRequest request = NotificationRequest.builder()
+                .type(NotificationType.WAITLIST_EXPIRED)
+                .userId(user.getId())
+                .email(user.getEmail())
+                .variables(variables)
+                .build();
+
+        send(request);
+        logger.info("候补过期通知已触发，候补ID: {}, 用户ID: {}", waitlist.getId(), user.getId());
+    }
+
+    private Map<String, Object> buildWaitlistVariables(Waitlist waitlist, User user, PracticeRoom room) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("waitlistId", waitlist.getId());
+        variables.put("username", user.getUsername());
+        variables.put("roomName", room.getName());
+        variables.put("roomLocation", room.getLocation());
+        variables.put("bookingDate", waitlist.getBookingDate().format(DATE_FORMATTER));
+        variables.put("startTime", waitlist.getStartTime().format(TIME_FORMATTER));
+        variables.put("endTime", waitlist.getEndTime().format(TIME_FORMATTER));
+        variables.put("priority", waitlist.getPriority());
+        variables.put("queuePosition", waitlist.getQueuePosition() != null ? waitlist.getQueuePosition() : "-");
+        variables.put("purpose", waitlist.getPurpose() != null ? waitlist.getPurpose() : "练习");
+        return variables;
     }
 
     private Map<String, Object> buildBookingVariables(Booking booking, User user, PracticeRoom room) {

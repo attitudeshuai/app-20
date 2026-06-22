@@ -7,6 +7,7 @@ import com.instrumentroom.exception.BusinessException;
 import com.instrumentroom.exception.ResourceNotFoundException;
 import com.instrumentroom.notification.NotificationService;
 import com.instrumentroom.repository.BookingRepository;
+import com.instrumentroom.service.waitlist.WaitlistPromotionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,16 +29,19 @@ public class BookingService {
     private final PracticeRoomService roomService;
     private final AuthService authService;
     private final NotificationService notificationService;
+    private final WaitlistPromotionService waitlistPromotionService;
 
     public BookingService(
             BookingRepository bookingRepository,
             PracticeRoomService roomService,
             AuthService authService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            WaitlistPromotionService waitlistPromotionService) {
         this.bookingRepository = bookingRepository;
         this.roomService = roomService;
         this.authService = authService;
         this.notificationService = notificationService;
+        this.waitlistPromotionService = waitlistPromotionService;
     }
 
     /**
@@ -231,6 +235,10 @@ public class BookingService {
 
         handleStatusChangeNotification(booking, oldStatus, newStatus);
 
+        if (newStatus == BookingStatus.CANCELLED && oldStatus != BookingStatus.CANCELLED) {
+            triggerWaitlistPromotion(booking);
+        }
+
         return BookingResponse.fromEntity(booking, true);
     }
 
@@ -244,7 +252,23 @@ public class BookingService {
 
         notificationService.notifyBookingCancelled(booking, "用户删除");
 
+        PracticeRoom room = booking.getRoom();
+        LocalDate bookingDate = booking.getBookingDate();
+        LocalTime startTime = booking.getStartTime();
+        LocalTime endTime = booking.getEndTime();
+
         bookingRepository.delete(booking);
+
+        waitlistPromotionService.promoteWaitlistsForSlot(
+                room.getId(), bookingDate, startTime, endTime);
+    }
+
+    private void triggerWaitlistPromotion(Booking booking) {
+        waitlistPromotionService.promoteWaitlistsForSlot(
+                booking.getRoom().getId(),
+                booking.getBookingDate(),
+                booking.getStartTime(),
+                booking.getEndTime());
     }
 
     private void handleStatusChangeNotification(Booking booking, BookingStatus oldStatus, BookingStatus newStatus) {
